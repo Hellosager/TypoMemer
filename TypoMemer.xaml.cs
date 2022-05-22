@@ -52,17 +52,17 @@ namespace TypoMemer
             InitializeComponent();
         }
 
-
-
         private IntPtr _windowHandle;
         private HwndSource _source;
-        protected override void OnSourceInitialized(EventArgs e)
-        {
-            base.OnSourceInitialized(e);
 
-            _windowHandle = new WindowInteropHelper(this).Handle;
+        protected override void OnInitialized(EventArgs e)
+        {
+            base.OnInitialized(e);
+            _windowHandle = new WindowInteropHelper(this).EnsureHandle();
+            Debug.Write("Handle: " + _windowHandle + Environment.NewLine);
             _source = HwndSource.FromHwnd(_windowHandle);
             _source.AddHook(HwndHook);
+            Debug.Write("Initializing Hotkey" + Environment.NewLine);
 
             RegisterHotKey(_windowHandle, HOTKEY_ID, MOD_CONTROL, VK_SPACE); //CTRL + Space
         }
@@ -97,12 +97,12 @@ namespace TypoMemer
             return IntPtr.Zero;
         }
 
-        protected override void OnClosed(EventArgs e)
+        /*protected override void OnClosed(EventArgs e)
         {
             _source.RemoveHook(HwndHook);
             UnregisterHotKey(_windowHandle, HOTKEY_ID);
             base.OnClosed(e);
-        }
+        }*/
 
         private void TextBox_KeyDown(object sender, KeyEventArgs e)
         {
