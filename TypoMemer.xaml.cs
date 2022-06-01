@@ -15,6 +15,10 @@ using System.Windows.Shapes;
 using System.Runtime.InteropServices;
 using System.Windows.Interop;
 using System.Diagnostics;
+using MongoDB.Bson;
+using MongoDB.Driver;
+using TypoMemer.Models;
+
 
 namespace TypoMemer
 {
@@ -45,6 +49,8 @@ namespace TypoMemer
         private const uint MOD_CONTROL = 0x0002; // CTRL
         private const uint VK_SPACE = 0x20;
 
+        private static IMongoCollection<Word> wordCollection;
+
         IntPtr handle;
 
         public MainWindow()
@@ -63,7 +69,6 @@ namespace TypoMemer
             _source = HwndSource.FromHwnd(_windowHandle);
             _source.AddHook(HwndHook);
             Debug.Write("Initializing Hotkey" + Environment.NewLine);
-
             RegisterHotKey(_windowHandle, HOTKEY_ID, MOD_CONTROL, VK_SPACE); //CTRL + Space
         }
 
@@ -109,12 +114,35 @@ namespace TypoMemer
             if (e.Key == Key.Return)
             {
                 if (SetForegroundWindow(handle))
-                    System.Windows.Forms.SendKeys.SendWait("Hello World*");
+                    System.Windows.Forms.SendKeys.SendWait(textbox.Text);
 
 
                 Debug.WriteLine("Enter was pressed");
             }
-
         }
+
+        private void TextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (textbox.Text.Length > 5)
+            {
+                // get help here: https://www.thecodebuzz.com/mongodb-csharp-driver-like-query-examples/
+                var filter = Builders<Word>.Filter.Regex("word", "^" + textbox.Text + ".*");
+                
+                // https://docs.microsoft.com/de-de/dotnet/csharp/programming-guide/concepts/async/
+                new Task(() => { queryDatabaseAsync(filter); }).Start();
+
+            }
+        }
+
+        private void queryDatabaseAsync(FilterDefinition<Word> filter)
+        {
+            var cursor = App.wordCollection.Find(filter);
+            var result = cursor.ToList();
+            foreach (Word word in result)
+            {
+                Debug.WriteLine(word.word);
+            }
+        }
+
     }
 }

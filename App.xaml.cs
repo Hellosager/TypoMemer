@@ -7,6 +7,9 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.ComponentModel;
 using System.Diagnostics;
+using MongoDB.Bson;
+using MongoDB.Driver;
+using TypoMemer.Models;
 
 namespace TypoMemer
 {
@@ -21,6 +24,10 @@ namespace TypoMemer
         private System.Windows.Forms.NotifyIcon _notifyIcon;
         private bool _isExit;
 
+        private MongoClient mongoClient;
+        private IMongoDatabase database;
+        public static IMongoCollection<Word> wordCollection;
+
         protected override void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
@@ -33,6 +40,8 @@ namespace TypoMemer
             _notifyIcon.Visible = true;
 
             CreateContextMenu();
+
+            LoadDictionary();
         }
 
         private void CreateContextMenu()
@@ -41,6 +50,16 @@ namespace TypoMemer
               new System.Windows.Forms.ContextMenuStrip();
             _notifyIcon.ContextMenuStrip.Items.Add("MainWindow...").Click += (s, e) => ShowMainWindow();
             _notifyIcon.ContextMenuStrip.Items.Add("Exit").Click += (s, e) => ExitApplication();
+        }
+
+        private void LoadDictionary() 
+        {
+            string[] args = Environment.GetCommandLineArgs();
+            Debug.WriteLine("Connecting via " + args[1]);
+            mongoClient = new MongoClient(args[1]);
+            database = mongoClient.GetDatabase("TypoMemer");
+            wordCollection = database.GetCollection<Word>("germanWords");
+           // var results = wordCollection.Find(word => word.word == "Sebastian").ToList();
         }
 
         private void ExitApplication()

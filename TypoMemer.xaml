@@ -7,7 +7,7 @@
         mc:Ignorable="d"
         Title="MainWindow" Height="120" Width="200">
     <Grid>
-        <TextBox HorizontalAlignment="Left" Margin="37,10,0,0" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Width="120" Background="#FF4C4444" Foreground="#FFFBFBFB" KeyDown="TextBox_KeyDown"/>
+        <TextBox x:Name="textbox" HorizontalAlignment="Left" Margin="37,10,0,0" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Width="120" Background="#FF4C4444" Foreground="#FFFBFBFB" KeyDown="TextBox_KeyDown" TextChanged="TextBox_TextChanged"/>
 
     </Grid>
 </Window>
