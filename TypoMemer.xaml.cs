@@ -18,6 +18,7 @@ using System.Diagnostics;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using TypoMemer.Models;
+using System.Windows.Threading;
 
 
 namespace TypoMemer
@@ -53,13 +54,15 @@ namespace TypoMemer
 
         IntPtr handle;
 
+        private IntPtr _windowHandle;
+        private HwndSource _source;
+
+        private DispatcherTimer typingTimer;
+
         public MainWindow()
         {
             InitializeComponent();
         }
-
-        private IntPtr _windowHandle;
-        private HwndSource _source;
 
         protected override void OnInitialized(EventArgs e)
         {
@@ -125,22 +128,49 @@ namespace TypoMemer
         {
             if (textbox.Text.Length > 5)
             {
-                // get help here: https://www.thecodebuzz.com/mongodb-csharp-driver-like-query-examples/
-                var filter = Builders<Word>.Filter.Regex("word", "^" + textbox.Text + ".*");
-                
-                // https://docs.microsoft.com/de-de/dotnet/csharp/programming-guide/concepts/async/
-                new Task(() => { queryDatabaseAsync(filter); }).Start();
+                if(typingTimer == null)
+                {
+                    typingTimer = new DispatcherTimer();
+                    typingTimer.Interval = TimeSpan.FromMilliseconds(500);
+                    typingTimer.Tick += new EventHandler(this.handleTypingTimerTimeout);
+                }
+                typingTimer.Stop();
+                typingTimer.Tag = (sender as TextBox).Text;
+                typingTimer.Start();
+
+
 
             }
         }
 
+        private void handleTypingTimerTimeout(object sender, EventArgs e)
+        {
+            var timer = sender as DispatcherTimer;
+            if(timer == null)
+            {
+                return;
+            }
+
+            var text = timer.Tag.ToString();
+            Debug.WriteLine("Showing suggestions for " + text);
+
+            // get help here: https://www.thecodebuzz.com/mongodb-csharp-driver-like-query-examples/
+            var filter = Builders<Word>.Filter.Regex("word", "^" + text + ".*");
+
+            // https://docs.microsoft.com/de-de/dotnet/csharp/programming-guide/concepts/async/
+            new Task(() => { queryDatabaseAsync(filter); }).Start();
+
+            timer.Stop();
+        }
+
         private void queryDatabaseAsync(FilterDefinition<Word> filter)
         {
-            var cursor = App.wordCollection.Find(filter);
+            var cursor = App.wordCollection.Find(filter).Limit(10);
             var result = cursor.ToList();
             foreach (Word word in result)
             {
                 Debug.WriteLine(word.word);
+                // TODO: And now show the words in frontend
             }
         }
 
