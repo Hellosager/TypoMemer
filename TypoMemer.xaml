@@ -5,9 +5,21 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:TypoMemer"
         mc:Ignorable="d"
-        Title="MainWindow" Height="120" Width="200">
+        Title="MainWindow" Height="61" Width="200">
     <Grid>
-        <TextBox x:Name="textbox" HorizontalAlignment="Left" Margin="37,10,0,0" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Width="120" Background="#FF4C4444" Foreground="#FFFBFBFB" KeyDown="TextBox_KeyDown" TextChanged="TextBox_TextChanged"/>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="11*"/>
+            <ColumnDefinition Width="9*"/>
+        </Grid.ColumnDefinitions>
+        <TextBox x:Name="textbox" HorizontalAlignment="Left" Margin="37,10,0,0" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Width="120" Background="#FF4C4444" Foreground="#FFFBFBFB" KeyDown="TextBox_KeyDown" TextChanged="TextBox_TextChanged" Grid.ColumnSpan="2" Visibility="Hidden"/>
+        <ComboBox xmlns:sys="clr-namespace:System;assembly=mscorlib" IsEditable="true" Grid.ColumnSpan="2">
+            <ComboBox.Resources>
+                <sys:Double x:Key="{x:Static SystemParameters.VerticalScrollBarWidthKey}">0</sys:Double>
+            </ComboBox.Resources>
+            <ComboBoxItem Name="abc" Content="abc" />
+            <ComboBoxItem Name="abcdefg" Content="abcdefg"/>
+        </ComboBox>
+        <Image HorizontalAlignment="Left" Height="100" Margin="38,33,0,0" VerticalAlignment="Top" Width="100" Grid.Column="1"/>
 
     </Grid>
 </Window>
