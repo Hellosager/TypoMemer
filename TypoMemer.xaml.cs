@@ -20,7 +20,6 @@ using MongoDB.Driver;
 using TypoMemer.Models;
 using System.Windows.Threading;
 
-
 namespace TypoMemer
 {
     /// <summary>
@@ -89,11 +88,16 @@ namespace TypoMemer
                             {
                                 handle = GetForegroundWindow();
                                 this.WindowState = WindowState.Normal;
+                                
+                                // both is needed else it won't focus the window
                                 this.Show();
-                               // const int nChars = 256;
-                               // StringBuilder Buff = new StringBuilder(nChars);
-                               // if (GetWindowText(handle, Buff, nChars) > 0)
-                               //     Debug.WriteLine("Coming from a " + Buff.ToString());
+                                this.Activate();
+                                
+                                // this basically waits for rendering to focus the field
+                                this.Dispatcher.BeginInvoke((Action)delegate
+                                {
+                                    Keyboard.Focus(autoCompleteDropdown);
+                                }, DispatcherPriority.Render);
 
                                 Debug.Write("Space was pressed" + Environment.NewLine);
                             }
