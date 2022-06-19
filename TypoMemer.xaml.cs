@@ -19,6 +19,7 @@ using MongoDB.Bson;
 using MongoDB.Driver;
 using TypoMemer.Models;
 using System.Windows.Threading;
+using System.Collections.ObjectModel;
 
 namespace TypoMemer
 {
@@ -58,6 +59,8 @@ namespace TypoMemer
 
         private DispatcherTimer typingTimer;
 
+        private ObservableCollection<string> words = new ObservableCollection<string>();
+
         public MainWindow()
         {
             InitializeComponent();
@@ -72,6 +75,7 @@ namespace TypoMemer
             _source.AddHook(HwndHook);
             Debug.Write("Initializing Hotkey" + Environment.NewLine);
             RegisterHotKey(_windowHandle, HOTKEY_ID, MOD_CONTROL, VK_SPACE); //CTRL + Space
+            autoCompleteDropdown.ItemsSource = words;
         }
 
         private IntPtr HwndHook(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
@@ -128,9 +132,10 @@ namespace TypoMemer
             }
         }
 
-        private void TextBox_TextChanged(object sender, TextChangedEventArgs e)
+        private void autoCompleteDropdown_TextChanged(object sender, TextChangedEventArgs e)
         {
-            if (textbox.Text.Length > 5)
+            autoCompleteDropdown.IsDropDownOpen = false;
+            if (autoCompleteDropdown.Text.Length > 5 && !autoCompleteDropdown.Items.Contains(autoCompleteDropdown.Text))
             {
                 if(typingTimer == null)
                 {
@@ -139,12 +144,35 @@ namespace TypoMemer
                     typingTimer.Tick += new EventHandler(this.handleTypingTimerTimeout);
                 }
                 typingTimer.Stop();
-                typingTimer.Tag = (sender as TextBox).Text;
+                typingTimer.Tag = (sender as ComboBox).Text;
                 typingTimer.Start();
 
 
 
             }
+        }
+
+        private int caretPosition = 0;
+        private void autoCompleteDropdown_SelectionChanged(object sender, RoutedEventArgs e)
+        {
+            // see https://stackoverflow.com/questions/1441645/wpf-dropdown-of-a-combobox-highlightes-the-text
+            TextBox textBox = (TextBox)((ComboBox)sender).Template.FindName("PART_EditableTextBox", (ComboBox)sender);
+/*            if(((ComboBox)sender).Text.Length > 0)
+            {
+                textBox.SelectionStart = ((ComboBox)sender).Text.Length;
+                textBox.SelectionLength = 0;
+            }*/
+/*
+            TextBox txt = (TextBox)sender;
+
+            if (autoCompleteDropdown.IsDropDownOpen && txt.SelectionLength > 0)
+            {
+                txt.CaretIndex = caretPosition;
+            }
+            if (txt.SelectionLength == 0 && txt.CaretIndex != 0)
+            {
+                caretPosition = txt.CaretIndex;
+            }*/
         }
 
         private void handleTypingTimerTimeout(object sender, EventArgs e)
@@ -171,11 +199,22 @@ namespace TypoMemer
         {
             var cursor = App.wordCollection.Find(filter).Limit(10);
             var result = cursor.ToList();
-            foreach (Word word in result)
+            /*List<string> words = new List<string>();*/
+
+            this.Dispatcher.Invoke(() =>
             {
-                Debug.WriteLine(word.word);
-                // TODO: And now show the words in frontend
-            }
+                words.Clear();
+
+                foreach (Word word in result)
+                {
+                    Debug.WriteLine(word.word);
+                    // TODO: And now show the words in frontend
+                    words.Add(word.word);
+                }
+                autoCompleteDropdown.IsDropDownOpen = true;
+            });
+            /*autoCompleteDropdown.ItemsSource = words;*/
+
         }
 
     }
