@@ -120,13 +120,12 @@ namespace TypoMemer
             base.OnClosed(e);
         }*/
 
-        private void TextBox_KeyDown(object sender, KeyEventArgs e)
+        private void autoCompleteDropdown_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Return)
             {
                 if (SetForegroundWindow(handle))
-                    System.Windows.Forms.SendKeys.SendWait(textbox.Text);
-
+                    System.Windows.Forms.SendKeys.SendWait(autoCompleteDropdown.Text);
 
                 Debug.WriteLine("Enter was pressed");
             }
