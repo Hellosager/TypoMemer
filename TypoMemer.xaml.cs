@@ -128,13 +128,22 @@ namespace TypoMemer
                     System.Windows.Forms.SendKeys.SendWait(autoCompleteDropdown.Text);
 
                 Debug.WriteLine("Enter was pressed");
+            } else if (e.Key == Key.Down)
+            {
+                Debug.WriteLine("Down");
             }
         }
 
         private void autoCompleteDropdown_TextChanged(object sender, TextChangedEventArgs e)
         {
-            autoCompleteDropdown.IsDropDownOpen = false;
-            if (autoCompleteDropdown.Text.Length > 5 && !autoCompleteDropdown.Items.Contains(autoCompleteDropdown.Text))
+            /*            autoCompleteDropdown.IsDropDownOpen = false;
+            */
+            Debug.WriteLine("text changed");
+            string textBoxText = autoCompleteDropdown.Text;
+            if ((!textBoxText.Equals(currentString)) // in case we switch back to source word
+                 && textBoxText.Length > 5
+                 /*&& !autoCompleteDropdown.Items.Contains(currentString)*/
+                 && !autoCompleteDropdown.Items.Contains(textBoxText))
             {
                 if(typingTimer == null)
                 {
@@ -148,29 +157,63 @@ namespace TypoMemer
 
 
 
+            } else
+            {
+                TextBox textBox = (TextBox)(autoCompleteDropdown.Template.FindName("PART_EditableTextBox", (ComboBox)sender));
+
+                /*textBox.SelectionStart = caretPosition;*/
+                int selectedValueLength = autoCompleteDropdown.SelectedValue != null ? autoCompleteDropdown.SelectedValue.ToString().Length : 0;
+
+                textbox.SelectionStart = selectionStart;
+                int selectionLength = selectedValueLength - caretPosition;
+                textBox.SelectionLength = selectionLength > 0 ? selectionLength : 0;
             }
         }
 
-        private int caretPosition = 0;
-        private void autoCompleteDropdown_SelectionChanged(object sender, RoutedEventArgs e)
+/*        private bool notInDropDownIgnoreCurrent(string textBoxText)
         {
-            // see https://stackoverflow.com/questions/1441645/wpf-dropdown-of-a-combobox-highlightes-the-text
-            TextBox textBox = (TextBox)((ComboBox)sender).Template.FindName("PART_EditableTextBox", (ComboBox)sender);
-/*            if(((ComboBox)sender).Text.Length > 0)
-            {
-                textBox.SelectionStart = ((ComboBox)sender).Text.Length;
-                textBox.SelectionLength = 0;
-            }*/
-/*
-            TextBox txt = (TextBox)sender;
 
-            if (autoCompleteDropdown.IsDropDownOpen && txt.SelectionLength > 0)
+            return !autoCompleteDropdown.Items.Contains(textBoxText) && !textBoxText.Equals(currentString);
+
+        }*/
+
+        private int caretPosition = 0;
+        private int selectionStart = 0;
+        private string currentString = "";
+        private void autoCompleteDropdown_DropDownSelectionChanged(object sender, RoutedEventArgs e)
+        {
+
+            Debug.WriteLine("selection changed");
+            if (!autoCompleteDropdown.IsDropDownOpen)
             {
-                txt.CaretIndex = caretPosition;
+                autoCompleteDropdown.IsDropDownOpen = true;
             }
-            if (txt.SelectionLength == 0 && txt.CaretIndex != 0)
+
+            
+            // see https://stackoverflow.com/questions/1441645/wpf-dropdown-of-a-combobox-highlightes-the-text
+            ComboBox comboBox = (ComboBox)sender;
+            TextBox textBox = (TextBox) (comboBox.Template.FindName("PART_EditableTextBox", (ComboBox)sender));
+
+            /*textBox.Text = currentString;*/
+
+            if (comboBox.Text.Length > 0 && comboBox.SelectedValue != null)
             {
-                caretPosition = txt.CaretIndex;
+                
+                var selectedValue = comboBox.SelectedValue.ToString();
+                /*textBox.Text = selectedValue;*/
+                selectionStart = caretPosition;
+               /* textBox.SelectionStart = caretPosition;*/
+                /*                textBox.SelectionLength = selectedValue.Length - caretPosition;
+                */
+              }
+/*
+            if (autoCompleteDropdown.IsDropDownOpen && textBox.SelectionLength > 0)
+            {
+                textBox.CaretIndex = caretPosition;
+            }
+            if (textBox.SelectionLength == 0 && textBox.CaretIndex != 0)
+            {
+                caretPosition = textBox.CaretIndex;
             }*/
         }
 
@@ -182,23 +225,27 @@ namespace TypoMemer
                 return;
             }
 
-            var text = timer.Tag.ToString();
-            Debug.WriteLine("Showing suggestions for " + text);
+            var searchTerm = timer.Tag.ToString();
+            currentString = searchTerm;
+            caretPosition = searchTerm != null ? searchTerm.Length : 0;
 
-            // get help here: https://www.thecodebuzz.com/mongodb-csharp-driver-like-query-examples/
-            var filter = Builders<Word>.Filter.Regex("word", "^" + text + ".*");
+            Debug.WriteLine("Showing suggestions for " + searchTerm);
 
             // https://docs.microsoft.com/de-de/dotnet/csharp/programming-guide/concepts/async/
-            new Task(() => { queryDatabaseAsync(filter); }).Start();
+            new Task(() => { queryDatabaseAsync(searchTerm); }).Start();
 
             timer.Stop();
+
+            // get help here: https://www.thecodebuzz.com/mongodb-csharp-driver-like-query-examples/
+            // var filter = Builders<Word>.Filter.Regex("word", "^" + text + ".*");
         }
 
-        private void queryDatabaseAsync(FilterDefinition<Word> filter)
+        private void queryDatabaseAsync(string searchTerm)
         {
-            var cursor = App.wordCollection.Find(filter).Limit(10);
-            var result = cursor.ToList();
-            /*List<string> words = new List<string>();*/
+
+            var result = App.wordCollection
+                .Aggregate(buildAutocompletePipeline(searchTerm))
+                .ToList();
 
             this.Dispatcher.Invoke(() =>
             {
@@ -207,13 +254,35 @@ namespace TypoMemer
                 foreach (Word word in result)
                 {
                     Debug.WriteLine(word.word);
-                    // TODO: And now show the words in frontend
                     words.Add(word.word);
                 }
+                
+                autoCompleteDropdown.IsDropDownOpen = false;
                 autoCompleteDropdown.IsDropDownOpen = true;
             });
             /*autoCompleteDropdown.ItemsSource = words;*/
 
+        }
+
+        private PipelineDefinition<Word, Word> buildAutocompletePipeline(string searchTerm)
+        {
+            return new BsonDocument[]
+            {
+                new BsonDocument("$search",
+                new BsonDocument("autocomplete",
+                new BsonDocument
+                        {
+                            { "query", searchTerm },
+                            { "path", "word" }
+                        })),
+                new BsonDocument("$limit", 10), // limit to 10 results
+                new BsonDocument("$project",
+                new BsonDocument
+                    {
+                        { "_id", 0 },
+                        { "word", 1 }
+                    })
+            };
         }
 
     }

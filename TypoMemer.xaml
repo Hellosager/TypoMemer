@@ -12,7 +12,7 @@
             <ColumnDefinition Width="9*"/>
         </Grid.ColumnDefinitions>
         <TextBox x:Name="textbox" HorizontalAlignment="Left" Margin="37,10,0,0" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Width="120" Background="#FF4C4444" Foreground="#FFFBFBFB" Grid.ColumnSpan="2" Visibility="Hidden"/>
-        <ComboBox xmlns:sys="clr-namespace:System;assembly=mscorlib" x:Name="autoCompleteDropdown" IsEditable="true" Grid.ColumnSpan="2" TextBoxBase.TextChanged="autoCompleteDropdown_TextChanged" TextBoxBase.SelectionChanged="autoCompleteDropdown_SelectionChanged" ShouldPreserveUserEnteredPrefix="true" KeyDown="autoCompleteDropdown_KeyDown">
+        <ComboBox xmlns:sys="clr-namespace:System;assembly=mscorlib" x:Name="autoCompleteDropdown" IsEditable="true" Grid.ColumnSpan="2" TextBoxBase.TextChanged="autoCompleteDropdown_TextChanged" SelectionChanged="autoCompleteDropdown_DropDownSelectionChanged" ShouldPreserveUserEnteredPrefix="true" KeyDown="autoCompleteDropdown_KeyDown">
             <ComboBox.Resources>
                 <sys:Double x:Key="{x:Static SystemParameters.VerticalScrollBarWidthKey}">0</sys:Double>
             </ComboBox.Resources>
