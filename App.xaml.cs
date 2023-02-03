@@ -60,7 +60,6 @@ namespace TypoMemer
             mongoClient = new MongoClient(args[1]);
             database = mongoClient.GetDatabase("TypoMemer");
             wordCollection = database.GetCollection<Word>("germanWords");
-           // var results = wordCollection.Find(word => word.word == "Sebastian").ToList();
         }
 
         private void ExitApplication()

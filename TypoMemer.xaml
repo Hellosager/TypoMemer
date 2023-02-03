@@ -3,8 +3,9 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:TypoMemer"
+        xmlns:local="clr-namespace:TypoMemer" xmlns:components="clr-namespace:TypoMemer.Components"
         mc:Ignorable="d"
+        ResizeMode="NoResize"
         Title="MainWindow" Height="61" Width="200">
     <Grid>
         <Grid.ColumnDefinitions>
@@ -12,11 +13,11 @@
             <ColumnDefinition Width="9*"/>
         </Grid.ColumnDefinitions>
         <TextBox x:Name="textbox" HorizontalAlignment="Left" Margin="37,10,0,0" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Width="120" Background="#FF4C4444" Foreground="#FFFBFBFB" Grid.ColumnSpan="2" Visibility="Hidden"/>
-        <ComboBox xmlns:sys="clr-namespace:System;assembly=mscorlib" x:Name="autoCompleteDropdown" IsEditable="true" Grid.ColumnSpan="2" TextBoxBase.TextChanged="autoCompleteDropdown_TextChanged" SelectionChanged="autoCompleteDropdown_DropDownSelectionChanged" ShouldPreserveUserEnteredPrefix="true" KeyDown="autoCompleteDropdown_KeyDown">
+        <components:CustomComboBox xmlns:sys="clr-namespace:System;assembly=mscorlib" x:Name="autoCompleteDropdown" IsEditable="true" Grid.ColumnSpan="2" TextBoxBase.TextChanged="autoCompleteDropdown_TextChanged" SelectionChanged="autoCompleteDropdown_DropDownSelectionChanged" ShouldPreserveUserEnteredPrefix="true" KeyDown="autoCompleteDropdown_KeyDown">
             <ComboBox.Resources>
                 <sys:Double x:Key="{x:Static SystemParameters.VerticalScrollBarWidthKey}">0</sys:Double>
             </ComboBox.Resources>
-        </ComboBox>
+        </components:CustomComboBox>
         <Image HorizontalAlignment="Left" Height="100" Margin="38,33,0,0" VerticalAlignment="Top" Width="100" Grid.Column="1"/>
 
     </Grid>

@@ -20,6 +20,7 @@ using MongoDB.Driver;
 using TypoMemer.Models;
 using System.Windows.Threading;
 using System.Collections.ObjectModel;
+using TypoMemer.Components;
 
 namespace TypoMemer
 {
@@ -59,8 +60,6 @@ namespace TypoMemer
 
         private DispatcherTimer typingTimer;
 
-        private ObservableCollection<string> words = new ObservableCollection<string>();
-
         public MainWindow()
         {
             InitializeComponent();
@@ -75,7 +74,6 @@ namespace TypoMemer
             _source.AddHook(HwndHook);
             Debug.Write("Initializing Hotkey" + Environment.NewLine);
             RegisterHotKey(_windowHandle, HOTKEY_ID, MOD_CONTROL, VK_SPACE); //CTRL + Space
-            autoCompleteDropdown.ItemsSource = words;
         }
 
         private IntPtr HwndHook(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
@@ -129,7 +127,7 @@ namespace TypoMemer
                     System.Windows.Forms.SendKeys.SendWait(autoCompleteDropdown.Text);
                     currentString = ""; // reset the string , because we accepted a suggestion
                     autoCompleteDropdown.Text = "";
-                    //words.Clear(); // also clear suggestion list
+                    autoCompleteDropdown.wordList.Clear(); // also clear suggestion list
                     autoCompleteDropdown.IsDropDownOpen = false;
                 }
 
@@ -154,8 +152,8 @@ namespace TypoMemer
                 // user just deleted one character from previous input
                 // clear wordss so that no change is triggered by textBoxText autocompleting one of the suggestions
 
-            // TODO not working yet because it seems that textBoxText changes to first hit in suggestions afterwards and won't trigger next if anymore
-                // words.Clear();
+                // TODO not working yet because it seems that textBoxText changes to first hit in suggestions afterwards and won't trigger next if anymore
+                // autoCompleteDropdown.wordList.Clear();
             }
 
             if ((!textBoxText.Equals(currentString)) // in case we switch back to source word
@@ -199,7 +197,7 @@ namespace TypoMemer
         private int caretPosition = 0;
         private int selectionStart = 0;
         private string currentString = "";
-        private void autoCompleteDropdown_DropDownSelectionChanged(object sender, RoutedEventArgs e)
+        private void autoCompleteDropdown_DropDownSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
 
             Debug.WriteLine("selection changed");
@@ -210,7 +208,7 @@ namespace TypoMemer
 
             
             // see https://stackoverflow.com/questions/1441645/wpf-dropdown-of-a-combobox-highlightes-the-text
-            ComboBox comboBox = (ComboBox)sender;
+            CustomComboBox comboBox = (CustomComboBox)sender;
             TextBox textBox = (TextBox) (comboBox.Template.FindName("PART_EditableTextBox", (ComboBox)sender));
 
             /*textBox.Text = currentString;*/
@@ -269,19 +267,18 @@ namespace TypoMemer
 
             this.Dispatcher.Invoke(() =>
             {
-                words.Clear();
+                autoCompleteDropdown.wordList.Clear();
 
                 foreach (Word word in result)
                 {
                     Debug.WriteLine(word.word);
-                    words.Add(word.word);
+                    autoCompleteDropdown.wordList.Add(word.word);
                 }
                 
+                // do we really have to do this?
                 autoCompleteDropdown.IsDropDownOpen = false;
                 autoCompleteDropdown.IsDropDownOpen = true;
             });
-            /*autoCompleteDropdown.ItemsSource = words;*/
-
         }
 
         private PipelineDefinition<Word, Word> buildAutocompletePipeline(string searchTerm)
