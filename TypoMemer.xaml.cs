@@ -125,10 +125,17 @@ namespace TypoMemer
             if (e.Key == Key.Return)
             {
                 if (SetForegroundWindow(handle))
+                {
                     System.Windows.Forms.SendKeys.SendWait(autoCompleteDropdown.Text);
+                    currentString = ""; // reset the string , because we accepted a suggestion
+                    autoCompleteDropdown.Text = "";
+                    //words.Clear(); // also clear suggestion list
+                    autoCompleteDropdown.IsDropDownOpen = false;
+                }
 
                 Debug.WriteLine("Enter was pressed");
-            } else if (e.Key == Key.Down)
+            }
+            else if (e.Key == Key.Down)
             {
                 Debug.WriteLine("Down");
             }
@@ -139,11 +146,22 @@ namespace TypoMemer
             /*            autoCompleteDropdown.IsDropDownOpen = false;
             */
             Debug.WriteLine("text changed");
+
             string textBoxText = autoCompleteDropdown.Text;
+
+            if(textBoxText.Length < currentString.Length && currentString.StartsWith(textBoxText))
+            {
+                // user just deleted one character from previous input
+                // clear wordss so that no change is triggered by textBoxText autocompleting one of the suggestions
+
+            // TODO not working yet because it seems that textBoxText changes to first hit in suggestions afterwards and won't trigger next if anymore
+                // words.Clear();
+            }
+
             if ((!textBoxText.Equals(currentString)) // in case we switch back to source word
                  && textBoxText.Length > 5
                  /*&& !autoCompleteDropdown.Items.Contains(currentString)*/
-                 && !autoCompleteDropdown.Items.Contains(textBoxText))
+                 && !autoCompleteDropdown.Items.Contains(textBoxText)) // don't do anything while changing threw suggestions
             {
                 if(typingTimer == null)
                 {
@@ -157,17 +175,18 @@ namespace TypoMemer
 
 
 
-            } else
+            }
+            /*else
             {
                 TextBox textBox = (TextBox)(autoCompleteDropdown.Template.FindName("PART_EditableTextBox", (ComboBox)sender));
 
-                /*textBox.SelectionStart = caretPosition;*/
+                //textBox.SelectionStart = caretPosition;
                 int selectedValueLength = autoCompleteDropdown.SelectedValue != null ? autoCompleteDropdown.SelectedValue.ToString().Length : 0;
 
                 textbox.SelectionStart = selectionStart;
                 int selectionLength = selectedValueLength - caretPosition;
                 textBox.SelectionLength = selectionLength > 0 ? selectionLength : 0;
-            }
+            } */
         }
 
 /*        private bool notInDropDownIgnoreCurrent(string textBoxText)
@@ -229,6 +248,7 @@ namespace TypoMemer
             currentString = searchTerm;
             caretPosition = searchTerm != null ? searchTerm.Length : 0;
 
+            Debug.WriteLine("Search Term is '" + searchTerm + "', setting caret position to " + caretPosition);
             Debug.WriteLine("Showing suggestions for " + searchTerm);
 
             // https://docs.microsoft.com/de-de/dotnet/csharp/programming-guide/concepts/async/
