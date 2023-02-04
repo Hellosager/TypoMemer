@@ -44,6 +44,35 @@ namespace TypoMemer.Components
             }
         }
 
+        protected override void OnSelectionChanged(SelectionChangedEventArgs e)
+        {
+            TextBox textBox = ((TextBox)(this.Template.FindName("PART_EditableTextBox", this)));
+           // textBox.text
+            string currentValue = textBox.Text; // from TextBoxBase
+            string valueBefore = this.Text;
+            if (e.AddedItems.Count > 0 && wordList.Contains(e.AddedItems[0]))
+            {
+                // we selected a suggestion, this is fine, do nothing
+                this.Text = (string)e.AddedItems[0];
+                e.Handled = true;
+            }
+            else if(valueBefore.StartsWith(currentValue, StringComparison.CurrentCultureIgnoreCase))
+            {
+
+                // TODO do i still need this after setting textSearchEnabled false?
+                // we just deleted a character, this is fine, do nothing
+                this.Text = currentValue;
+                textBox.CaretIndex = currentValue.Length;
+                e.Handled = true;
+            }
+            else
+            {
+
+                base.OnSelectionChanged(e);
+            }
+
+        }
+
         public ObservableCollection<string> wordList { get; set; }
 
     }

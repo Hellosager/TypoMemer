@@ -201,10 +201,10 @@ namespace TypoMemer
         {
 
             Debug.WriteLine("selection changed");
-            if (!autoCompleteDropdown.IsDropDownOpen)
+           /* if (!autoCompleteDropdown.IsDropDownOpen)
             {
                 autoCompleteDropdown.IsDropDownOpen = true;
-            }
+            } */
 
             
             // see https://stackoverflow.com/questions/1441645/wpf-dropdown-of-a-combobox-highlightes-the-text
@@ -267,6 +267,7 @@ namespace TypoMemer
 
             this.Dispatcher.Invoke(() =>
             {
+                autoCompleteDropdown.IsDropDownOpen = false;
                 autoCompleteDropdown.wordList.Clear();
 
                 foreach (Word word in result)
@@ -276,7 +277,6 @@ namespace TypoMemer
                 }
                 
                 // do we really have to do this?
-                autoCompleteDropdown.IsDropDownOpen = false;
                 autoCompleteDropdown.IsDropDownOpen = true;
             });
         }
