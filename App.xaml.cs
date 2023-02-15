@@ -32,7 +32,7 @@ namespace TypoMemer
         protected override void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
-            MainWindow = new MainWindow();
+            MainWindow = new TypoMemerWindow();
             MainWindow.Closing += MainWindow_Closing;
 
             _notifyIcon = new System.Windows.Forms.NotifyIcon();
@@ -49,8 +49,8 @@ namespace TypoMemer
         {
             _notifyIcon.ContextMenuStrip =
               new System.Windows.Forms.ContextMenuStrip();
-            _notifyIcon.ContextMenuStrip.Items.Add("MainWindow...").Click += (s, e) => ShowMainWindow();
-            _notifyIcon.ContextMenuStrip.Items.Add("Exit").Click += (s, e) => ExitApplication();
+            _notifyIcon.ContextMenuStrip.Items.Add("TypoMemer").Click += (s, e) => ShowMainWindow();
+            _notifyIcon.ContextMenuStrip.Items.Add("Close TypoMemer").Click += (s, e) => ExitApplication();
         }
 
         private void LoadDictionary() 

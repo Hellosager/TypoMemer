@@ -27,7 +27,7 @@ namespace TypoMemer
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
-    public partial class MainWindow : Window
+    public partial class TypoMemerWindow : Window
     {
         [DllImport("user32.dll")]
         private static extern bool RegisterHotKey(IntPtr hWnd, int id, uint fsModifiers, uint vk);
@@ -60,7 +60,7 @@ namespace TypoMemer
 
         private DispatcherTimer typingTimer;
 
-        public MainWindow()
+        public TypoMemerWindow()
         {
             InitializeComponent();
         }
@@ -126,9 +126,10 @@ namespace TypoMemer
                 {
                     System.Windows.Forms.SendKeys.SendWait(autoCompleteDropdown.Text);
                     currentString = ""; // reset the string , because we accepted a suggestion
-                    autoCompleteDropdown.Text = "";
                     autoCompleteDropdown.wordList.Clear(); // also clear suggestion list
+                    autoCompleteDropdown.Text = "";
                     autoCompleteDropdown.IsDropDownOpen = false;
+                    this.Hide();
                 }
 
                 Debug.WriteLine("Enter was pressed");
@@ -147,19 +148,10 @@ namespace TypoMemer
 
             string textBoxText = autoCompleteDropdown.Text;
 
-            if(textBoxText.Length < currentString.Length && currentString.StartsWith(textBoxText))
-            {
-                // user just deleted one character from previous input
-                // clear wordss so that no change is triggered by textBoxText autocompleting one of the suggestions
-
-                // TODO not working yet because it seems that textBoxText changes to first hit in suggestions afterwards and won't trigger next if anymore
-                // autoCompleteDropdown.wordList.Clear();
-            }
-
             if ((!textBoxText.Equals(currentString)) // in case we switch back to source word
                  && textBoxText.Length > 5
                  /*&& !autoCompleteDropdown.Items.Contains(currentString)*/
-                 && !autoCompleteDropdown.Items.Contains(textBoxText)) // don't do anything while changing threw suggestions
+                 && !autoCompleteDropdown.Items.Contains(textBoxText)) // don't do anything while changing through suggestions
             {
                 if(typingTimer == null)
                 {
@@ -168,71 +160,15 @@ namespace TypoMemer
                     typingTimer.Tick += new EventHandler(this.handleTypingTimerTimeout);
                 }
                 typingTimer.Stop();
-                typingTimer.Tag = (sender as ComboBox).Text;
+                typingTimer.Tag = (sender as CustomComboBox).Text;
                 typingTimer.Start();
 
 
 
             }
-            /*else
-            {
-                TextBox textBox = (TextBox)(autoCompleteDropdown.Template.FindName("PART_EditableTextBox", (ComboBox)sender));
-
-                //textBox.SelectionStart = caretPosition;
-                int selectedValueLength = autoCompleteDropdown.SelectedValue != null ? autoCompleteDropdown.SelectedValue.ToString().Length : 0;
-
-                textbox.SelectionStart = selectionStart;
-                int selectionLength = selectedValueLength - caretPosition;
-                textBox.SelectionLength = selectionLength > 0 ? selectionLength : 0;
-            } */
         }
 
-/*        private bool notInDropDownIgnoreCurrent(string textBoxText)
-        {
-
-            return !autoCompleteDropdown.Items.Contains(textBoxText) && !textBoxText.Equals(currentString);
-
-        }*/
-
-        private int caretPosition = 0;
-        private int selectionStart = 0;
         private string currentString = "";
-        private void autoCompleteDropdown_DropDownSelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-
-            Debug.WriteLine("selection changed");
-           /* if (!autoCompleteDropdown.IsDropDownOpen)
-            {
-                autoCompleteDropdown.IsDropDownOpen = true;
-            } */
-
-            
-            // see https://stackoverflow.com/questions/1441645/wpf-dropdown-of-a-combobox-highlightes-the-text
-            CustomComboBox comboBox = (CustomComboBox)sender;
-            TextBox textBox = (TextBox) (comboBox.Template.FindName("PART_EditableTextBox", (ComboBox)sender));
-
-            /*textBox.Text = currentString;*/
-
-            if (comboBox.Text.Length > 0 && comboBox.SelectedValue != null)
-            {
-                
-                var selectedValue = comboBox.SelectedValue.ToString();
-                /*textBox.Text = selectedValue;*/
-                selectionStart = caretPosition;
-               /* textBox.SelectionStart = caretPosition;*/
-                /*                textBox.SelectionLength = selectedValue.Length - caretPosition;
-                */
-              }
-/*
-            if (autoCompleteDropdown.IsDropDownOpen && textBox.SelectionLength > 0)
-            {
-                textBox.CaretIndex = caretPosition;
-            }
-            if (textBox.SelectionLength == 0 && textBox.CaretIndex != 0)
-            {
-                caretPosition = textBox.CaretIndex;
-            }*/
-        }
 
         private void handleTypingTimerTimeout(object sender, EventArgs e)
         {
@@ -244,9 +180,9 @@ namespace TypoMemer
 
             var searchTerm = timer.Tag.ToString();
             currentString = searchTerm;
-            caretPosition = searchTerm != null ? searchTerm.Length : 0;
+            //this.caretPosition = searchTerm != null ? searchTerm.Length : 0;
 
-            Debug.WriteLine("Search Term is '" + searchTerm + "', setting caret position to " + caretPosition);
+            //Debug.WriteLine("Search Term is '" + searchTerm + "', setting caret position to " + caretPosition);
             Debug.WriteLine("Showing suggestions for " + searchTerm);
 
             // https://docs.microsoft.com/de-de/dotnet/csharp/programming-guide/concepts/async/
@@ -278,6 +214,8 @@ namespace TypoMemer
                 
                 // do we really have to do this?
                 autoCompleteDropdown.IsDropDownOpen = true;
+                //autoCompleteDropdown.textBox.SelectionStart = searchTerm.Length;
+                //autoCompleteDropdown.textBox.SelectionLength = 0;
             });
         }
 
