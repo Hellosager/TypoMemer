@@ -21,6 +21,9 @@ using TypoMemer.Models;
 using System.Windows.Threading;
 using System.Collections.ObjectModel;
 using TypoMemer.Components;
+using System.Windows.Forms;
+using KeyEventArgs = System.Windows.Input.KeyEventArgs;
+using Accessibility;
 
 namespace TypoMemer
 {
@@ -44,12 +47,74 @@ namespace TypoMemer
         [DllImport("user32.dll")]
         private static extern bool SetForegroundWindow(IntPtr hWnd);
 
+        [DllImport("user32.dll")]
+        private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out IntPtr ProcessId);
+
+        [DllImport("user32.dll")]
+        public static extern bool GetGUIThreadInfo(uint hTreadID, ref GUITHREADINFO lpgui);
+
+        [DllImport("user32.dll")]
+        public static extern bool GetWindowRect(IntPtr hwnd, ref RECT rectangle);
+
+        [DllImport("user32.dll")]
+        public static extern bool GetClientRect(IntPtr hwnd, ref RECT rectangle);
+
+        [DllImport("user32.dll")]
+        public static extern bool ScreenToClient(IntPtr hWnd, ref Point point);
+
+        [DllImport("oleacc.dll")]
+        internal static extern int AccessibleObjectFromWindow(IntPtr hwnd, uint id, ref Guid iid, ref IAccessible iAccessible);
+
+        [DllImport("user32.dll")]
+        public static extern int GetCaretPos(out POINT lpPoint);
+
+
+        //[DllImport("oleacc.dll")]
+        //public static extern int AccessibleObjectFromWindow(int hwnd, uint dwObjectID, byte[] riid, ref IAccessible ptr);
+
+
         public static void SetActiveWindow(IntPtr windowHandle) => SetForegroundWindow(windowHandle);
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct RECT
+        {
+            public int iLeft;
+            public int iTop;
+            public int iRight;
+            public int iBottom;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct GUITHREADINFO
+        {
+            public int cbSize;
+            public int flags;
+            public IntPtr hwndActive;
+            public IntPtr hwndFocus;
+            public IntPtr hwndCapture;
+            public IntPtr hwndMenuOwner;
+            public IntPtr hwndMoveSize;
+            public IntPtr hwndCaret;
+            public RECT rectCaret;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct POINT
+        {
+            public uint x;
+            public uint y;
+        }
 
         private const int HOTKEY_ID = 1337;
 
+        private const uint MOD_ALT = 0x0001; // ALT
         private const uint MOD_CONTROL = 0x0002; // CTRL
-        private const uint VK_SPACE = 0x20;
+        private const uint MOD_SHIFT = 0x0004; // SHIFT
+        private const uint VK_SPACE = 0x20; // Space key
+        private const uint VK_T = 0x54; // T key
+
+        Guid iid = new Guid("{618736E0-3C3D-11CF-810C-00AA00389B71}"); // IID_IAccessible
+        private const uint OBJID_CARET = 0xFFFFFFF8; // -8
 
         private static IMongoCollection<Word> wordCollection;
 
@@ -73,9 +138,16 @@ namespace TypoMemer
             _source = HwndSource.FromHwnd(_windowHandle);
             _source.AddHook(HwndHook);
             Debug.Write("Initializing Hotkey" + Environment.NewLine);
-            RegisterHotKey(_windowHandle, HOTKEY_ID, MOD_CONTROL, VK_SPACE); //CTRL + Space
+
+            /*
+             * For a non-blocking global hotkey we should use SetWindowsHookEx instead. This right here will prevent
+             * the key to get through to other applications. For now we have a unique combination,
+             * but we should at least make it configurable in the future.
+             */
+            RegisterHotKey(_windowHandle, HOTKEY_ID, MOD_SHIFT + MOD_ALT, VK_T); // SHIFT + ALT + T
         }
 
+        
         private IntPtr HwndHook(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
         {
             const int WM_HOTKEY = 0x0312;
@@ -86,9 +158,14 @@ namespace TypoMemer
                     {
                         case HOTKEY_ID:
                             int vkey = (((int)lParam >> 16) & 0xFFFF);
-                            if (vkey == VK_SPACE)
+                            if (vkey == VK_T)
                             {
                                 handle = GetForegroundWindow();
+
+                                Point caretPosition = getCaretPosition(handle);
+                                this.Left = caretPosition.X;
+                                this.Top = caretPosition.Y;
+
                                 this.WindowState = WindowState.Normal;
                                 
                                 // both is needed else it won't focus the window
@@ -110,6 +187,80 @@ namespace TypoMemer
             }
             return IntPtr.Zero;
         }
+
+        private Point getCaretPosition(IntPtr windowHandle)
+        {
+                // getting the position of the active window for following calculations
+                RECT foregroundWindowRect = new RECT();
+                GetWindowRect(windowHandle, ref foregroundWindowRect);
+            try
+            {
+                // try first method
+                IntPtr ProcessId;
+                uint threadId = GetWindowThreadProcessId(windowHandle, out ProcessId);
+                GUITHREADINFO threadInfo = new GUITHREADINFO();
+                threadInfo.cbSize = Marshal.SizeOf(threadInfo);
+
+                GetGUIThreadInfo(threadId, ref threadInfo);
+                if(threadInfo.rectCaret.iLeft > 0) // we assume that we found the caret if not 0
+                {
+                    int x = foregroundWindowRect.iLeft + threadInfo.rectCaret.iLeft;
+                    // threadInfo.rectCaret seems to behave different between applications
+                    // in notepad it looks like Bottom isn't accounting for menu etc., in firefox it works fine
+                    int y = foregroundWindowRect.iTop + threadInfo.rectCaret.iBottom + 10;
+
+                    return new Point(x, y);
+                }
+                else
+                {
+                    // otherwise we try second method
+                    IAccessible accessibleObject = null;
+                    AccessibleObjectFromWindow(windowHandle, OBJID_CARET, ref iid, ref accessibleObject);
+
+                    RECT caretRect = new RECT();
+                    //object varChild = accessibleObject.accFocus;
+                    //                                accessibleObject.accFocus(out varChild);
+
+                    // TODO: not working for chromium browser and probably other cases, add try catch and fallback
+                    accessibleObject.accLocation(out caretRect.iLeft, out caretRect.iTop, out caretRect.iRight, out caretRect.iBottom);
+                    if(caretRect.iLeft > 0)
+                    {
+                        int x = foregroundWindowRect.iLeft + caretRect.iLeft;
+                        int y = caretRect.iTop + caretRect.iBottom + 10;
+
+                        return new Point(x, y);
+                    }
+                    else
+                    {
+                        // TODO: set to screen middle
+                        return getCenterPointOfWindow(windowHandle, foregroundWindowRect);
+                    }
+                }
+            } catch (Exception ex)
+            {
+                // if any shit happens, we just return center of window
+                return getCenterPointOfWindow(windowHandle, foregroundWindowRect);
+            }
+        }
+
+        private Point getCenterPointOfWindow(IntPtr windowHandle, RECT foregroundWindowRect)
+        {
+            int tMemerXOffset = (int)(this.Width / 2);
+            int tMemerYOffset = (int)(this.Height / 2);
+
+            int foreGroundWindowXOffset = foregroundWindowRect.iLeft >= 0
+                ? (foregroundWindowRect.iRight - foregroundWindowRect.iLeft) / 2
+                : ((Math.Abs(foregroundWindowRect.iRight) - Math.Abs(foregroundWindowRect.iLeft)) / 2);
+            int foreGroundWindowYOffset = (foregroundWindowRect.iBottom - foregroundWindowRect.iTop) / 2;
+
+            return new Point(foreGroundWindowXOffset - tMemerXOffset,
+                foreGroundWindowYOffset - tMemerYOffset);
+        }
+
+        //        private static Screen GetScreen(Window window)
+        //        {
+        //            return Screen.FromHandle(new WindowInteropHelper(window).Handle);
+        //        }
 
         /*protected override void OnClosed(EventArgs e)
         {

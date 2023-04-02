@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:TypoMemer" xmlns:components="clr-namespace:TypoMemer.Components"
         mc:Ignorable="d"
         ResizeMode="NoResize"
-        Title="MainWindow" Height="61" Width="200">
+        Title="TypoMemer" Height="60" Width="200">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="11*"/>

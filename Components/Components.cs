@@ -64,13 +64,14 @@ namespace TypoMemer.Components
 
         protected override void OnSelectionChanged(SelectionChangedEventArgs e)
         {
-            Debug.WriteLine("selection in CustomComboBox changed to " + e.AddedItems[0]);
             // textBox.text
             TextBox textBox = ((TextBox)(this.Template.FindName("PART_EditableTextBox", this)));
             string currentValue = textBox.Text; // from TextBoxBase
             string valueBefore = this.Text;
             if (e.AddedItems.Count > 0 && wordList.Contains(e.AddedItems[0]))
             {
+                Debug.WriteLine("selection in CustomComboBox changed to " + e.AddedItems[0]);
+
                 // we selected a suggestion, this is fine, do nothing
                 this.Text = (string)e.AddedItems[0];
                 textBox.SelectionStart = this.Text.Length;
